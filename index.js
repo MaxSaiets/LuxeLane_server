@@ -18,7 +18,7 @@ admin.initializeApp({
 const PORT = process.env.PORT || 5000
 
 const app = express()
-app.use(cors())
+app.use(cors({ origin: 'https://maxsaiets.github.io' }));
 app.use(express.static(path.resolve(__dirname, 'static'))) // явно указати серверу що файли з папки static треба роздавати як static
 // app.use(fileUpload({})) // для роботи з файлами
 
