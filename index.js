@@ -9,7 +9,7 @@ const path = require('path')
 
 // Firebase
 const admin = require('firebase-admin');
-const serviceAccount = require("./keys/serviceAccountKey.json");
+const serviceAccount = require("/etc/secrets/serviceAccountKey.json");
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount)
 });
