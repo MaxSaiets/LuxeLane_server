@@ -7,6 +7,7 @@ const checkVerifyAdminMiddleware = require('../middleware/checkVerifyAdminMiddle
 router.get('/fetchBrands', brandController.getAll);
 router.post('/addNewBrand', checkVerifyAdminMiddleware, brandController.create);
 router.delete('/deleteBrand/:id', checkVerifyAdminMiddleware, brandController.delete);
+
 router.put('/updateBrand/:id', checkVerifyAdminMiddleware, brandController.update);
 
 module.exports = router

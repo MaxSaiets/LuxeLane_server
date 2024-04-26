@@ -36,10 +36,20 @@ class BrandController {
 
     async update(req, res, next) {
         try {
-            const {id} = req.params
-            const {name} = req.body
+            const { id } = req.params;
+            const { name } = req.body;
+            
+            const brand = await Brand.findByPk(id);
+            
+            if (!brand) {
+                throw ApiError.badRequest(`Brand with id ${id} not found`);
+            }
     
-            const brand = await Brand.update({name}, {where: {id}})
+            if (name) {
+                brand.name = name;
+                await brand.save();
+            }
+    
             return res.json({brand})
         } catch (e) {
             return next(ApiError.badRequest(e.message))

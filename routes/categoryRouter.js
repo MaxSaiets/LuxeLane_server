@@ -1,11 +1,16 @@
 const Router = require('express')
 const router = new Router() 
+
 const categoriesInfoController = require('../controllers/categoriesInfoController')
 
-router.get('/categories', categoriesInfoController.getCategories)  
+const checkVerifyAdminMiddleware = require('../middleware/checkVerifyAdminMiddleware')
 
-router.delete('/deleteCategory/:id', categoriesInfoController.deleteCategory) 
-router.delete('/deleteImgCategory/:id', categoriesInfoController.deleteImgCategory) 
+router.get('/categories', categoriesInfoController.getCategories)  
+router.post('/addCategory', checkVerifyAdminMiddleware, categoriesInfoController.addCategory)
+router.put('/updateCategory/:id', checkVerifyAdminMiddleware, categoriesInfoController.updateCategory)
+
+router.delete('/deleteCategory/:id', checkVerifyAdminMiddleware, categoriesInfoController.deleteCategory) 
+router.delete('/deleteImgCategory/:id', checkVerifyAdminMiddleware, categoriesInfoController.deleteImgCategory) 
 
 router.get('/getCategoriesIcons', categoriesInfoController.getCategoriesIcons) 
 router.get('/getCategoriesNameId', categoriesInfoController.getCategoriesNameId) 

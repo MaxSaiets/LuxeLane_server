@@ -36,13 +36,23 @@ class TypeController {
 
     async update(req, res, next) {
         try {
-            const {id} = req.params
-            const {name} = req.body
-
-            const type = await Type.update({name}, {where: {id}})
+            const { id } = req.params;
+            const { name } = req.body;
+            
+            const type = await Type.findByPk(id);
+            
+            if (!type) {
+                throw ApiError.badRequest(`Brand with id ${id} not found`);
+            }
+    
+            if (name) {
+                type.name = name;
+                await type.save();
+            }
+    
             return res.json({type})
         } catch (e) {
-            next(ApiError.badRequest(e.message))
+            return next(ApiError.badRequest(e.message))
         }
     }
 

@@ -28,72 +28,44 @@ class ProductController {
     }
 
     async create(req, res) {
-        try {
-          uploadProduct.array('productImages')(req, res, async function(err) {
-            if (err) {
-              return res.status(500).json({error: err.message});
-            }
-            try { 
-                
-                let {title, price, categories, subCategories, types, brands} = req.body;
-      
-                if (categories && categories !== 'undefined') 
-                    categories = JSON.parse(categories);
-                if (subCategories && subCategories !== 'undefined') 
-                    subCategories = JSON.parse(subCategories);
-                if (types && types !== 'undefined') 
-                    types = JSON.parse(types);
-                if (brands && brands !== 'undefined') 
-                    brands = JSON.parse(brands);
-                
-                for(let i = 0; i < 20; i++) {
+        try { 
+            let {title, price, categories, subCategories, types, brands, previewImageName, previewImageUrl, additionalImages} = req.body;
 
-                    const product = await Product.create({
-                        title,
-                        price,
-                    });
-                    
-                    if (req.files && req.files.length) {
-                        const previewImage = req.files[0];
-                        const additionalImages = req.files.slice(1);
-    
+                const product = await Product.create({
+                    title,
+                    price,
+                });
+                
+                const previewImage = await Image.create({
+                    imgName: previewImageName,
+                    imgSrc: previewImageUrl,
+                    imageableType: 'productPreview',
+                });
+                  
+                await ProductImage.create({ productId: product.id, imageId: previewImage.id });
+                  
+                if(additionalImages &&  Array.isArray(additionalImages)){
+                    for (const imageFile of additionalImages) {
                         const image = await Image.create({
-                            imgName: previewImage.originalname,
-                            imgSrc: previewImage.path,
-                            imageableType: 'productPreview',
+                            imgName: imageFile.name,
+                            imgSrc: typeof imageFile.url === 'object' ? imageFile.url.url : imageFile.url,
+                            imageableType: 'productImgAdditional',
                         });
+                  
                         await ProductImage.create({ productId: product.id, imageId: image.id });
-                        
-                        for (const imageFile of additionalImages) {
-                            const image = await Image.create({
-                                imgName: imageFile.originalname,
-                                imgSrc: imageFile.path,
-                                imageableType: 'productAdditional',
-                            });
-    
-                            await ProductImage.create({ productId: product.id, imageId: image.id });
-                        }
-            
-                    
-                    } else {
-                        return res.status(400).json({ error: 'No file uploaded or existing image for product preview' });
                     }
-          
-                    await product.addCategories(categories.map(category => category.id));
-                    await product.addSubCategories(subCategories.map(subCategory => subCategory.id));
-                    await product.addTypes(types.map(type => type.id));
-                    await product.addBrands(brands.map(brand => brand.id));
-                    
                 }
+        
+              
+                await product.addCategories(categories.map(category => category.id));
+                await product.addSubCategories(subCategories.map(subCategory => subCategory.id));
+                await product.addTypes(types.map(type => type.id));
+                await product.addBrands(brands.map(brand => brand.id));
+                
                 return res.json({product});
-            } catch (err) {
-                return res.status(500).send('Error creating product');
-            }
-        });
-        } catch (error) {
-            console.error("ERROR WITH ADD PRODUCT", error);
-
-            return res.status(500).json({error: error.message});
+        } catch (err) {
+            console.error(err);
+            return res.status(500).send('Error creating product: ' + err.message);
         }
     }
 
@@ -103,6 +75,11 @@ class ProductController {
             const product = await Product.destroy({
                 where: {id}
             })
+            
+            if (!product) {
+                return res.status(404).json({error: 'Product not found'});
+            }
+
             return res.json(product)
         } catch (error) {
             return res.status(500).json({error: error.message})
@@ -188,7 +165,7 @@ class ProductController {
 
             productBrands = await fetchBrandsWithProductCount(sequelizeFilters, allProducts);
 
-            processProductImages(products, req.headers.host);
+            // processProductImages(products, req.headers.host);
             
             const pageCount = Math.ceil(totalProductsCount / limit);
             
@@ -331,13 +308,13 @@ async function fetchBrandsWithProductCount(sequelizeFilters, selectedProducts) {
     }
 }
 
-function processProductImages(products, host) {
-    products.forEach(product => {
-        product.images.sort((a, b) => b.imageableType.localeCompare(a.imageableType));
-        product.images.forEach(image => {
-            image.imgSrc = `http://${host}/${image.imgSrc.replace('static\\', '').replace(/\\/g, '/')}`;
-        });
-    });
-}
+// function processProductImages(products, host) {
+//     products.forEach(product => {
+//         product.images.sort((a, b) => b.imageableType.localeCompare(a.imageableType));
+//         product.images.forEach(image => {
+//             image.imgSrc = `http://${host}/${image.imgSrc.replace('static\\', '').replace(/\\/g, '/')}`;
+//         });
+//     });
+// }
 
 module.exports = new ProductController()
