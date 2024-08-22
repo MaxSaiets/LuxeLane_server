@@ -1,4 +1,17 @@
-const {Product, Category, SubCategory, Type, Brand, Image, ProductSubCategory, ProductBrand, ProductImage} = require('../models/models')
+const {
+    Product,
+    SubCategory,
+    Type,
+    Brand, 
+    Image,
+    ProductBrand,
+    ProductImage,
+    Basket,
+    BasketItem,
+    FavoriteList,
+    FavoriteItem,
+    RecentlyViewed,
+} = require('../models/models')
 const ApiError = require('../error/ApiError')
 const { uploadProduct } = require('../multerConfig')
 const { Op } = require('sequelize');
@@ -27,6 +40,24 @@ class ProductController {
         }
     }
 
+    async getProductDataById(req, res) {
+        const { id } = req.params;
+    
+        try {
+            const product = await Product.findByPk(id, {
+                include: Object.values(Product.associations)
+            });
+    
+            if (product) {
+                return res.json(product);
+            } else {
+                return res.status(404).json({ error: 'Product not found' });
+            }
+        } catch (error) {
+            return res.status(500).json({ error: error.message });
+        }
+    }
+
     async create(req, res) {
         try { 
             let {title, price, categories, subCategories, types, brands, previewImageName, previewImageUrl, additionalImages} = req.body;
@@ -34,6 +65,7 @@ class ProductController {
                 const product = await Product.create({
                     title,
                     price,
+                    code: await generateUniqueCode(),
                 });
                 
                 const previewImage = await Image.create({
@@ -56,7 +88,6 @@ class ProductController {
                     }
                 }
         
-              
                 await product.addCategories(categories.map(category => category.id));
                 await product.addSubCategories(subCategories.map(subCategory => subCategory.id));
                 await product.addTypes(types.map(type => type.id));
@@ -108,68 +139,92 @@ class ProductController {
     }
 
     async fetchProductsData(req, res) {
-        // Associations related to Product:
-        // - Name: basket_products, Target: basket_product, Type: HasMany
-        // - Name: wish_products, Target: wish_product, Type: HasMany
-        // - Name: orders, Target: order, Type: HasMany
-        // - Name: ratings, Target: rating, Type: HasMany
-        // - Name: reviews, Target: review, Type: HasMany
-        // - Name: discountCard_for_products, Target: discountCard_for_product, Type: HasMany      
-        // - Name: discounts, Target: discount, Type: HasMany
-        // - Name: images, Target: image, Type: BelongsToMany
-        // - Name: brands, Target: brand, Type: BelongsToMany
-        // - Name: types, Target: type, Type: BelongsToMany
-        // - Name: subCategories, Target: subCategory, Type: BelongsToMany
-        // - Name: categories, Target: category, Type: BelongsToMany
-        // - Name: product_infos, Target: product_info, Type: HasMany
-
-        const { name, page = 1, brandsRequest, filters = {} } = req.body;
+        const {userId, name, page = 1, brandsRequest, filters = {} } = req.body;
         const limit = 10;
         const offset = (page - 1) * limit;
-        
+    
         const sequelizeFilters = await convertFiltersToSequelize(filters);
-
+    
         try {
             const subCategories = await SubCategory.findAll({ where: { name } });
-
+    
             let totalProductsCount;
             let products;
             let minPrice;
             let maxPrice;
             let productBrands;
             let types;
-            
+    
             let allProducts;
-
+    
             if (subCategories.length > 0) {
                 products = await fetchProductsBySubCategory(subCategories, brandsRequest, limit, offset, sequelizeFilters);
-
+    
                 totalProductsCount = await countProducts(SubCategory, subCategories, sequelizeFilters);
-                
+    
                 // Return all products
-                allProducts = await fetchProductsBySubCategory(subCategories, brandsRequest, null, null, sequelizeFilters);
-                
+                allProducts = await fetchProductsBySubCategory(subCategories, null, null, null, sequelizeFilters);
+    
                 ({ minPrice, maxPrice } = await fetchMinMaxPrice(SubCategory, subCategories));
-            
-            }  else {
+    
+            } else {
                 types = await Type.findAll({ where: { name } });
+                console.log("Typesasdfasdf: ", types);
                 products = await fetchProductsByType(types, brandsRequest, limit, offset, sequelizeFilters);
                 totalProductsCount = await countProducts(Type, types, sequelizeFilters);
-
+    
                 // Return all products
                 allProducts = await fetchProductsByType(types, null, null, null, sequelizeFilters);
-                
-                ({ minPrice, maxPrice } = await fetchMinMaxPrice(Type, types));            
+    
+                ({ minPrice, maxPrice } = await fetchMinMaxPrice(Type, types));
             }
-
-
-            productBrands = await fetchBrandsWithProductCount(sequelizeFilters, allProducts);
-
-            // processProductImages(products, req.headers.host);
-            
+    
+            let favoriteProductIds = [];
+            let basketProductIds = [];
+    
+            if (userId) {
+                const favoriteList = await FavoriteList.findOne({ where: { userId } });
+                if (favoriteList) {
+                    const favoriteItems = await FavoriteItem.findAll({ where: { favoriteListId: favoriteList.id } });
+                    favoriteProductIds = favoriteItems.map(item => item.productId);
+                }
+    
+                const basket = await Basket.findOne({ where: { userId } });
+                if (basket) {
+                    const basketItems = await BasketItem.findAll({ where: { basketId: basket.id } });
+                    basketProductIds = basketItems.map(item => item.productId);
+                }
+            }
+    
+            const productsWithFlags = products.map(product => {
+                const isFavorite = favoriteProductIds.includes(product.id);
+                const isInBasket = basketProductIds.includes(product.id);
+    
+                const images = product.images.slice(0, 2).map(image => image.dataValues.imgSrc);
+    
+                return {
+                    id: product.id,
+                    code: product.code,
+                    title: product.title,
+                    price: product.price,
+                    images: images,
+                    isFavorite,
+                    isInBasket,
+                };
+            });
+    
+            productBrands = await fetchBrandsWithProductCount(sequelizeFilters, products);
+    
             const pageCount = Math.ceil(totalProductsCount / limit);
-            
-            return res.json({ products, totalProductsCount, minPrice, maxPrice, brands: productBrands, pageCount});
+    
+            return res.json({
+                products: productsWithFlags,
+                totalProductsCount,
+                minPrice,
+                maxPrice,
+                brands: productBrands,
+                pageCount
+            });
         } catch (error) {
             console.log("Error fetching products: ", error);
             return res.status(500).json({ error: error.message });
@@ -220,33 +275,36 @@ async function convertFiltersToSequelize(filters) {
     const sequelizeFilters = {};
     for (const key in filters) {
         const filter = filters[key];
-        if (filter.between) {
-            sequelizeFilters[key] = { [Op.between]: filter.between };
+        if (key === 'price' && Array.isArray(filter) && filter[0] !== undefined) {
+            sequelizeFilters[key] = { [Op.between]: filter[0] };
         }
-        if (filter.gt) {
-            sequelizeFilters[key] = { [Op.gt]: filter.gt };
-        } 
-        if (filter.gte) {
-            sequelizeFilters[key] = { [Op.gte]: filter.gte };
-        }
-        if (filter.lt) {
-            sequelizeFilters[key] = { [Op.lt]: filter.lt };
-        }
-        if (filter.lte) {
-            sequelizeFilters[key] = { [Op.lte]: filter.lte };
-        }
-        if (filter.ne) {
-            sequelizeFilters[key] = { [Op.ne]: filter.ne };
-        }   
-        if (filter.eq) { 
-            sequelizeFilters[key] = { [Op.eq]: filter.eq };
-        }
-        if (filter.in) {
-            sequelizeFilters[key] = { [Op.in]: filter.in };
-        }
-        if (filter.notIn) {
-            sequelizeFilters[key] = { [Op.notIn]: filter.notIn };
-        }
+        // if (filter.between) {
+        //     sequelizeFilters[key] = { [Op.between]: filter.between };
+        // }
+        // if (filter.gt) {
+        //     sequelizeFilters[key] = { [Op.gt]: filter.gt };
+        // } 
+        // if (filter.gte) {
+        //     sequelizeFilters[key] = { [Op.gte]: filter.gte };
+        // }
+        // if (filter.lt) {
+        //     sequelizeFilters[key] = { [Op.lt]: filter.lt };
+        // }
+        // if (filter.lte) {
+        //     sequelizeFilters[key] = { [Op.lte]: filter.lte };
+        // }
+        // if (filter.ne) {
+        //     sequelizeFilters[key] = { [Op.ne]: filter.ne };
+        // }   
+        // if (filter.eq) { 
+        //     sequelizeFilters[key] = { [Op.eq]: filter.eq };
+        // }
+        // if (filter.in) {
+        //     sequelizeFilters[key] = { [Op.in]: filter.in };
+        // }
+        // if (filter.notIn) {
+        //     sequelizeFilters[key] = { [Op.notIn]: filter.notIn };
+        // }
     }
     return sequelizeFilters;
 }
@@ -275,7 +333,12 @@ async function fetchMinMaxPrice(Model, items) {
             raw: true,
         });
 
-        return result[0];
+        if (result && result.length > 0) {
+            return result[0];
+        } else {
+            console.error('Error fetch min and max price: result is undefined or empty');
+            return { minPrice: 0, maxPrice: 0 };
+        }
     } catch (error) {
         console.error("Error fetch min and max price: ", error);
     }
@@ -283,6 +346,7 @@ async function fetchMinMaxPrice(Model, items) {
 
 async function fetchBrandsWithProductCount(sequelizeFilters, selectedProducts) {
     try {
+        console.log("sequelsdfsdfsizeFilters: ", sequelizeFilters);
         const brands = await Brand.findAll({
             include: [{ model: Product, where: sequelizeFilters }]
         });
@@ -306,15 +370,20 @@ async function fetchBrandsWithProductCount(sequelizeFilters, selectedProducts) {
         console.error("Помилка отримання кількості товарів для брендів: ", error);
         return {};
     }
+
 }
 
-// function processProductImages(products, host) {
-//     products.forEach(product => {
-//         product.images.sort((a, b) => b.imageableType.localeCompare(a.imageableType));
-//         product.images.forEach(image => {
-//             image.imgSrc = `http://${host}/${image.imgSrc.replace('static\\', '').replace(/\\/g, '/')}`;
-//         });
-//     });
-// }
+const generateUniqueCode = async () => {
+    let code;
+    let isUnique = false;
+    while (!isUnique) {
+        code = Math.random().toString(36).substring(2, 10).toUpperCase();
+        const existingProduct = await Product.findOne({ where: { code } });
+        if (!existingProduct) {
+            isUnique = true;
+        }
+    }
+    return code;
+};
 
 module.exports = new ProductController()

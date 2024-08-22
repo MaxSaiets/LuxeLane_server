@@ -5,7 +5,7 @@ const categoriesInfoController = require('../controllers/categoriesInfoControlle
 
 const checkVerifyAdminMiddleware = require('../middleware/checkVerifyAdminMiddleware')
 
-router.get('/categories', categoriesInfoController.getCategories)  
+router.get('/categoriesData', categoriesInfoController.getCategoriesData)  
 router.post('/addCategory', checkVerifyAdminMiddleware, categoriesInfoController.addCategory)
 router.put('/updateCategory/:id', checkVerifyAdminMiddleware, categoriesInfoController.updateCategory)
 

@@ -39,19 +39,27 @@ const DiscountCardForProduct = sequelize.define("discountCard_for_product", {
 })
 
 // BASKETS
-const BasketList = sequelize.define("basket_list", {
+const Basket = sequelize.define("basket", {
     id: {type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true},
 })
-const BasketProduct = sequelize.define("basket_product", {
+const BasketItem = sequelize.define("basket_item", {
+    id: {type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true},
+    quantity: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 1 }
+})
+// FAVORITES
+const FavoriteList = sequelize.define("favorite_list", {
     id: {type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true},
 })
-
-const WishList = sequelize.define("wish_list", {
+const FavoriteItem = sequelize.define("favorite_item", {
     id: {type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true},
 })
-const WishProduct = sequelize.define("wish_product", {
-    id: {type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true},
-})
+// RECENTLY VIEWED
+const RecentlyViewedList = sequelize.define("recently_viewed_list", {
+    id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+});
+const RecentlyViewedItem = sequelize.define("recently_viewed_item", {
+    id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+});
 
 // ORDERS
 const Order = sequelize.define("order", {
@@ -76,6 +84,7 @@ const Rating = sequelize.define("rating", {
 // PRODUCTS
 const Product = sequelize.define("product", {
     id: {type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true},
+    code: {type: DataTypes.STRING, unique: true, allowNull: false},
     title: {type: DataTypes.STRING, allowNull: false},
     price: {type: DataTypes.INTEGER, allowNull: false},
 })
@@ -102,6 +111,12 @@ const Type = sequelize.define('type', {
     id: {type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true},
     name: {type: DataTypes.STRING, unique: true, allowNull: false},
 })
+const TypeSubCategory = sequelize.define('type_subCategory', {
+    id: {type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true},
+    typeId: {type: DataTypes.INTEGER, allowNull: false},
+    subCategoryId: {type: DataTypes.INTEGER, allowNull: false},
+});
+
 // brand
 const Brand = sequelize.define('brand', {
     id: {type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true},
@@ -164,24 +179,37 @@ const ProductType = sequelize.define('product_type', {
 
 
 // RELATIONS
-// User has one BasketList
-User.hasOne(BasketList, {foreignKey: 'userId'});
-BasketList.belongsTo(User, {foreignKey: 'userId'});
 
-Product.hasMany(BasketProduct, {foreignKey: 'productId'});
-BasketProduct.belongsTo(Product, {foreignKey: 'productId'});
+// Basket
+User.hasOne(Basket, { foreignKey: 'userId' });
+Basket.belongsTo(User, { foreignKey: 'userId' });
 
-BasketList.hasMany(BasketProduct, {foreignKey: 'basketListId'});
-BasketProduct.belongsTo(BasketList, {foreignKey: 'basketListId'});
-// User has one WishList
-User.hasOne(WishList, {foreignKey: 'userId'});
-WishList.belongsTo(User, {foreignKey: 'userId'});
+Basket.hasMany(BasketItem, { foreignKey: 'basketId' });
+BasketItem.belongsTo(Basket, { foreignKey: 'basketId' });
 
-Product.hasMany(WishProduct, {foreignKey: 'wishListId'});
-WishProduct.belongsTo(Product, {foreignKey: 'wishListId'});
+Product.hasMany(BasketItem, { foreignKey: 'productId' });
+BasketItem.belongsTo(Product, { foreignKey: 'productId' });
 
-WishList.hasMany(WishProduct, {foreignKey: 'wishListId'});
-WishProduct.belongsTo(WishList, {foreignKey: 'wishListId'});
+// FAVORITELIST
+User.hasOne(FavoriteList, { foreignKey: 'userId' });
+FavoriteList.belongsTo(User, { foreignKey: 'userId' });
+
+FavoriteList.hasMany(FavoriteItem, { foreignKey: 'favoriteListId' });
+FavoriteItem.belongsTo(FavoriteList, { foreignKey: 'favoriteListId' });
+
+Product.hasMany(FavoriteItem, { foreignKey: 'productId' });
+FavoriteItem.belongsTo(Product, { foreignKey: 'productId' });
+
+// RECENTLY VIEWED
+User.hasOne(RecentlyViewedList, { foreignKey: 'userId' });
+RecentlyViewedList.belongsTo(User, { foreignKey: 'userId' });
+
+RecentlyViewedList.hasMany(RecentlyViewedItem, { foreignKey: 'recentlyViewedListId' });
+RecentlyViewedItem.belongsTo(RecentlyViewedList, { foreignKey: 'recentlyViewedListId' });
+
+Product.hasMany(RecentlyViewedItem, { foreignKey: 'productId' });
+RecentlyViewedItem.belongsTo(Product, { foreignKey: 'productId' });
+
 
 // ORDERS
 User.hasMany(Order, {foreignKey: 'userId'});
@@ -228,6 +256,9 @@ Brand.belongsToMany(Product, { through: ProductBrand });
 Product.belongsToMany(Type, { through: ProductType });
 Type.belongsToMany(Product, { through: ProductType });
 
+Type.belongsToMany(SubCategory, { through: TypeSubCategory });
+SubCategory.belongsToMany(Type, { through: TypeSubCategory });
+
 // categories
 Product.belongsToMany(SubCategory, {through: ProductSubCategory});
 SubCategory.belongsToMany(Product, {through: ProductSubCategory});
@@ -256,10 +287,12 @@ module.exports = {
     Discount,
     DiscountCard,
     DiscountCardForProduct,
-    BasketList,
-    BasketProduct,
-    WishList,
-    WishProduct,
+    Basket,
+    BasketItem,
+    FavoriteList,
+    FavoriteItem,
+    RecentlyViewedList,
+    RecentlyViewedItem,
     Order,
     Review,
     Rating,
@@ -277,4 +310,5 @@ module.exports = {
     ProductSubCategory,
     ProductType,
     ProductBrand,
+    TypeSubCategory,
 }
