@@ -1,13 +1,13 @@
 const {Sequelize} = require('sequelize') // це Node.js ORM взаємодіяти з реляційними базами даних, такими як MySQL, PostgreSQL, SQLite
 
 module.exports = new Sequelize(
-    "luxe_lanedb",
-    "root",
-    "hwGTvoD9Usu6fGiLdMtiPtmmTwU2Xjk7",
+    process.env.DB_NAME,
+    process.env.DB_USER,
+    process.env.DB_PASSWORD,
     {
         dialect: 'postgres',
-        host: "5432",
-        port: "5432",
+        host: process.env.DB_HOST,
+        port: process.env.DB_PORT,
         // logging: false // відключає логування запитів
     }
 )
