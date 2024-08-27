@@ -6,6 +6,7 @@ const fileUpload = require('express-fileupload') // щоб можна було �
 const router = require('./routes/index') // основний роутер
 const errorHandler = require('./middleware/ErrorHandlingMiddleware')
 const path = require('path')
+const fs = require('fs');
 
 // Firebase
 const admin = require('firebase-admin');
