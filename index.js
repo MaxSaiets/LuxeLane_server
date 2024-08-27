@@ -44,7 +44,7 @@ const start = async () => {
 
         // await sequelize.sync({ force: true }) // force true - видаляє всі дані з БД і створює нові таблиці
 
-        app.listen(PORT, () => console.log(`Server started on port: ${port}`))
+        app.listen(port, () => console.log(`Server started on port: ${port}`))
     } catch (e){
         console.log(e)
     }
