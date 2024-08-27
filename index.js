@@ -9,7 +9,10 @@ const path = require('path')
 
 // Firebase
 const admin = require('firebase-admin');
-const serviceAccount = require('./serviceAccountKey.json');
+// Шлях до секретного файлу
+const serviceAccountPath = path.resolve(__dirname, 'serviceAccountKey.json');
+// Зчитування секретного файлу
+const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'));
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount)
 });
