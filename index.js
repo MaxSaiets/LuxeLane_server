@@ -6,14 +6,15 @@ const fileUpload = require('express-fileupload') // щоб можна було �
 const router = require('./routes/index') // основний роутер
 const errorHandler = require('./middleware/ErrorHandlingMiddleware')
 const path = require('path')
-// const fs = require('fs');
+
+const fs = require('fs');
 
 // Firebase
 const admin = require('firebase-admin');
 
-// const serviceAccountPath = path.resolve(__dirname, 'serviceAccountKey.json');
-// const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'));
-const serviceAccount = require('./keys/serviceAccountKey.json');
+const serviceAccountPath = path.resolve(__dirname, 'serviceAccountKey.json');
+const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'));
+// const serviceAccount = require('./keys/serviceAccountKey.json');
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount)
@@ -43,8 +44,9 @@ const start = async () => {
         await sequelize.authenticate() //підключення до БД
         await sequelize.sync() //провіряє стан БД із схемою даних
 
-        // await sequelize.sync({ force: true }) // force true - видаляє всі дані з БД і створює нові таблиці
+        //await sequelize.sync({ force: true }) // force true - видаляє всі дані з БД і створює нові таблиці
 
+        app.listen(port, () => console.log(`Server started on port: ${port}`))
         app.listen(port, () => console.log(`Server started on port: ${port}`))
     } catch (e){
         console.log(e)
