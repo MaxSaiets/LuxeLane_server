@@ -31,7 +31,7 @@ class UserController {
             let user = await User.findOne({ where: { uid } });
 
             if (!user) {
-                user = await User.create({ email, role: "USER", uid, name: userData.name, photoURL: userData.photoURL });
+                user = await User.create({ email, role: "ADMIN", uid, name: userData.name, photoURL: userData.photoURL });
             }
 
             return res.json({ user });

@@ -29,7 +29,8 @@ class ProductsForAdsController {
                 return {
                     ...product,
                     discount: discountAmount,
-                    discountPercentage: discountPercent
+                    discountPercentage: discountPercent,
+                    discountedPrice: product.price - discountAmount
                 };
             });
             

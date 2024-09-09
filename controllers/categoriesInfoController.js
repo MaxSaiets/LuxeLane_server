@@ -34,6 +34,7 @@ class CategoriesController {
 
             const formattedCategories = categories.map(category => {
                 return {
+                    id: category.id,
                     categoryName: category.dataValues.categoryName,
                     categoryImage: category.dataValues.images[0].imgSrc,
                     subCategories: subCategoriesWithTypes

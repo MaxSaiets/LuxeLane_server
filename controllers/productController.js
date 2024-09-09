@@ -41,26 +41,78 @@ class ProductController {
     }
 
     async getProductDataById(req, res) {
-        const { id } = req.params;
-    
+        const { id, userId } = req.params;
+        
         try {
-            const product = await Product.findByPk(id, {
-                include: Object.values(Product.associations)
+            const product = await Product.findOne({
+                where: { id },
+                include: [
+                    {
+                        model: Image,
+                        as: 'images',
+                        required: false,
+                        attributes: ['imgName', 'imgSrc', 'imageableType'],
+                        where: {
+                            [Op.or]: [
+                                { imageableType: 'productFullPreview' },
+                                { imageableType: 'productImgAdditional' }
+                            ]
+                        },
+                        order: [
+                            ['imageableType', 'ASC'],
+                            ['createdAt', 'ASC']
+                        ]
+                    },
+                    Brand,
+                    Type,
+                    SubCategory,
+                ]
             });
-    
-            if (product) {
-                return res.json(product);
-            } else {
-                return res.status(404).json({ error: 'Product not found' });
+
+            let favoriteProductIds = [];
+            let basketProductIds = [];
+        
+            if (userId) {
+                const favoriteList = await FavoriteList.findOne({ where: { userId } });
+                if (favoriteList) {
+                    const favoriteItems = await FavoriteItem.findAll({ where: { favoriteListId: favoriteList.id } });
+                    favoriteProductIds = favoriteItems.map(item => item.productId);
+                }
+        
+                const basket = await Basket.findOne({ where: { userId } });
+                if (basket) {
+                    const basketItems = await BasketItem.findAll({ where: { basketId: basket.id } });
+                    basketProductIds = basketItems.map(item => item.productId);
+                }
             }
+
+            const images = product.images.map(image => ({
+                imgSrc: image.imgSrc,
+                imgName: image.imgName,
+                // imageableType: image.imageableType
+            }));
+
+            const productWithFlags = {
+                id: product.id,
+                code: product.code,
+                title: product.title,
+                price: product.price,
+                images: images,
+                isFavorite: favoriteProductIds.includes(product.id),
+                isInBasket: basketProductIds.includes(product.id)
+            };
+        
+            return res.json(productWithFlags);
         } catch (error) {
+            console.error("Error fetching product data: ", error);
             return res.status(500).json({ error: error.message });
         }
     }
+    
 
     async create(req, res) {
         try { 
-            let {title, price, categories, subCategories, types, brands, previewImageName, previewImageUrl, additionalImages} = req.body;
+            let {title, price, categories, subCategories, types, brands, previewImageName, previewImageUrl, fullPreviewImageName, fullPreviewImageUrl, additionalImages} = req.body;
 
                 const product = await Product.create({
                     title,
@@ -73,8 +125,15 @@ class ProductController {
                     imgSrc: previewImageUrl,
                     imageableType: 'productPreview',
                 });
+
+                const previewFullImage = await Image.create({
+                    imgName: fullPreviewImageName,
+                    imgSrc: fullPreviewImageUrl,
+                    imageableType: 'productFullPreview',
+                });
                   
                 await ProductImage.create({ productId: product.id, imageId: previewImage.id });
+                await ProductImage.create({ productId: product.id, imageId: previewFullImage.id });
                   
                 if(additionalImages &&  Array.isArray(additionalImages)){
                     for (const imageFile of additionalImages) {
@@ -169,7 +228,6 @@ class ProductController {
     
             } else {
                 types = await Type.findAll({ where: { name } });
-                console.log("Typesasdfasdf: ", types);
                 products = await fetchProductsByType(types, brandsRequest, limit, offset, sequelizeFilters);
                 totalProductsCount = await countProducts(Type, types, sequelizeFilters);
     
@@ -199,7 +257,6 @@ class ProductController {
             const productsWithFlags = products.map(product => {
                 const isFavorite = favoriteProductIds.includes(product.id);
                 const isInBasket = basketProductIds.includes(product.id);
-    
                 const images = product.images.slice(0, 2).map(image => image.dataValues.imgSrc);
     
                 return {
@@ -216,7 +273,7 @@ class ProductController {
             productBrands = await fetchBrandsWithProductCount(sequelizeFilters, products);
     
             const pageCount = Math.ceil(totalProductsCount / limit);
-    
+
             return res.json({
                 products: productsWithFlags,
                 totalProductsCount,
@@ -346,7 +403,6 @@ async function fetchMinMaxPrice(Model, items) {
 
 async function fetchBrandsWithProductCount(sequelizeFilters, selectedProducts) {
     try {
-        console.log("sequelsdfsdfsizeFilters: ", sequelizeFilters);
         const brands = await Brand.findAll({
             include: [{ model: Product, where: sequelizeFilters }]
         });

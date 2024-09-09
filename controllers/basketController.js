@@ -50,10 +50,12 @@ class BasketController {
                 include: [BasketItem]
             });
 
-            const basketItems = await BasketItem.findAll({ where: { basketId: basket.id } });
-
-            const detailedItems = await getDetailedProductInfoForBasketAndFavorites({productsItems: basketItems, userId});
-            return res.json({ basket_items: detailedItems });
+            if(basket){
+                const basketItems = await BasketItem.findAll({ where: { basketId: basket.id } });
+    
+                const detailedItems = await getDetailedProductInfoForBasketAndFavorites({productsItems: basketItems, userId});
+                return res.json({ basket_items: detailedItems });
+            }
         } catch (err) {
             console.error(err);
             return res.status(500).send('Error fetching basket products: ' + err.message);
