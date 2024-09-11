@@ -41,8 +41,8 @@ class ProductController {
     }
 
     async getProductDataById(req, res) {
-        const { id, userId } = req.params;
-        
+        const { id } = req.params;
+        const { userId } = req.query;
         try {
             const product = await Product.findOne({
                 where: { id },
@@ -55,7 +55,9 @@ class ProductController {
                         where: {
                             [Op.or]: [
                                 { imageableType: 'productFullPreview' },
-                                { imageableType: 'productImgAdditional' }
+                                { imageableType: 'productFullBigPreview' },
+                                { imageableType: 'productImgBigPreview' },
+                                { imageableType: 'productBigImg' }
                             ]
                         },
                         order: [
@@ -71,7 +73,7 @@ class ProductController {
 
             let favoriteProductIds = [];
             let basketProductIds = [];
-        
+            
             if (userId) {
                 const favoriteList = await FavoriteList.findOne({ where: { userId } });
                 if (favoriteList) {
@@ -86,11 +88,27 @@ class ProductController {
                 }
             }
 
-            const images = product.images.map(image => ({
-                imgSrc: image.imgSrc,
-                imgName: image.imgName,
-                // imageableType: image.imageableType
-            }));
+            const imageMap = {};
+            console.log( "sdfdsfdsf",  product.images);
+            product.images.forEach(image => {
+                const { imgName, imgSrc, imageableType } = image;
+    
+                const validImgSrc = imgSrc || 'https://firebasestorage.googleapis.com/v0/b/reactmarket-79722.appspot.com/o/utils%2F404.png?alt=media&token=161921ed-2e18-4cec-acff-2f8a171abaeb';
+    
+                if (!imageMap[imgName]) {
+                    imageMap[imgName] = {
+                        imgName: imgName,
+                        imgSrc: validImgSrc,
+                        imgBigSrc: imageableType === 'productFullBigPreview' ? validImgSrc : 'https://firebasestorage.googleapis.com/v0/b/reactmarket-79722.appspot.com/o/utils%2F404.png?alt=media&token=161921ed-2e18-4cec-acff-2f8a171abaeb',
+                    };
+                } else {
+                    if (imageableType === 'productBigImg' || imageableType === 'productFullBigPreview') {
+                        imageMap[imgName].imgBigSrc = validImgSrc;
+                    }
+                }
+            });
+    
+            const images = Object.values(imageMap);
 
             const productWithFlags = {
                 id: product.id,
@@ -112,7 +130,20 @@ class ProductController {
 
     async create(req, res) {
         try { 
-            let {title, price, categories, subCategories, types, brands, previewImageName, previewImageUrl, fullPreviewImageName, fullPreviewImageUrl, additionalImages} = req.body;
+            let {title,
+                price,
+                categories,
+                subCategories,
+                types,
+                brands,
+                previewImageName,
+                previewImageUrl,
+                fullPreviewImageName,
+                fullPreviewImageUrl,
+                fullBigPreviewImageName,
+                fullBigPreviewImageUrl,
+                additionalImages,
+            } = req.body;
 
                 const product = await Product.create({
                     title,
@@ -131,19 +162,34 @@ class ProductController {
                     imgSrc: fullPreviewImageUrl,
                     imageableType: 'productFullPreview',
                 });
+
+                const previewFullBigImage = await Image.create({
+                    imgName: fullBigPreviewImageName,
+                    imgSrc: fullBigPreviewImageUrl,
+                    imageableType: 'productFullBigPreview',
+                });
                   
                 await ProductImage.create({ productId: product.id, imageId: previewImage.id });
                 await ProductImage.create({ productId: product.id, imageId: previewFullImage.id });
+                await ProductImage.create({ productId: product.id, imageId: previewFullBigImage.id });
                   
                 if(additionalImages &&  Array.isArray(additionalImages)){
                     for (const imageFile of additionalImages) {
-                        const image = await Image.create({
-                            imgName: imageFile.name,
-                            imgSrc: typeof imageFile.url === 'object' ? imageFile.url.url : imageFile.url,
-                            imageableType: 'productImgAdditional',
+                        const imageBigPreview = await Image.create({
+                            imgName: imageFile.nameBigPreview,
+                            imgSrc: imageFile.urlBigPreview,
+                            imageableType: 'productImgBigPreview',
                         });
                   
-                        await ProductImage.create({ productId: product.id, imageId: image.id });
+                        await ProductImage.create({ productId: product.id, imageId: imageBigPreview.id });
+                        
+                        const imageBigImg = await Image.create({
+                            imgName: imageFile.nameBigImg,
+                            imgSrc: imageFile.urlBigImg,
+                            imageableType: 'productBigImg',
+                        });
+                  
+                        await ProductImage.create({ productId: product.id, imageId: imageBigImg.id });
                     }
                 }
         
@@ -257,7 +303,7 @@ class ProductController {
             const productsWithFlags = products.map(product => {
                 const isFavorite = favoriteProductIds.includes(product.id);
                 const isInBasket = basketProductIds.includes(product.id);
-                const images = product.images.slice(0, 2).map(image => image.dataValues.imgSrc);
+                const images = product.images.slice(0, 4).filter((_, index) => index === 0 || index === 3).map(image => image.dataValues.imgSrc);
     
                 return {
                     id: product.id,
