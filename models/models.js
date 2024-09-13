@@ -126,8 +126,8 @@ const Brand = sequelize.define('brand', {
 // IMAGES
 const Image = sequelize.define('image', {
     id: {type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true},
-    imgName: {type: DataTypes.STRING, allowNull: false},
-    imgSrc: {type: DataTypes.STRING, allowNull: false},
+    imgName: {type: DataTypes.STRING(1000), allowNull: false},
+    imgSrc: {type: DataTypes.STRING(1000), allowNull: false},
     imageableType: {type: DataTypes.STRING}, //type img
     // imageableId: {type: DataTypes.INTEGER}, //id img
 })

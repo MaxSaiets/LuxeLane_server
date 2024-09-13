@@ -11,7 +11,7 @@ const generateJwt = (id, email, role) => {
     return jwt.sign(
         {id, email, role}, 
         process.env.SECRET_KEY,
-        {expiresIn: '24h'} // опції, час життя
+        { expiresIn: '24h', algorithm: 'HS256' } // опції, час життя
     )
 }
 
@@ -31,7 +31,8 @@ class UserController {
             let user = await User.findOne({ where: { uid } });
 
             if (!user) {
-                user = await User.create({ email, role: "ADMIN", uid, name: userData.name, photoURL: userData.photoURL });
+                // user = await User.create({ email, role: "ADMIN", uid, name: userData.name, photoURL: userData.photoURL });
+                user = await User.create({ email, role: "ADMIN", uid });
             }
 
             return res.json({ user });

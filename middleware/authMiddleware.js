@@ -7,14 +7,12 @@ module.exports = function(req, res, next){
         next()
     }
     try{
-        const token = req.headers.authorization.split(' ')[1] // Bearer token - тип токена потім сам токен (так пишуть) тобто треба розлепить і по 1 індексу отримати сам токен
-
+        const token = req.headers.authorization.split(' ')[1] // Bearer token - тип токена потім сам токен (так пишуть) тобто треба розпилить і по 1 індексу отримати сам токен
         if(!token){
             return res.status(401).json({message: 'Не авторизований!(authMiddleware.js)'})
         }
         const decode = jwt.verify(token, process.env.SECRET_KEY)
         req.user = decode
-        console.log("TTT" + decode)
         next()
     } catch(err){
         res.status(401).json({message: 'Користувач не авторизований'})

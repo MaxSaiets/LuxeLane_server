@@ -5,7 +5,9 @@ const { getDetailedProductInfoForBasketAndFavorites } = require('./commonFunctio
 class BasketController {
     async addProductToBasket(req, res) {
         try {
-            const { userId, productId, quantity = 1 } = req.body;
+            const { productId, quantity = 1 } = req.body;
+            const userId = req.user.id;
+
             let basketItem;
 
             const [basket, created] = await Basket.findOrCreate({ where: { userId } });
@@ -43,8 +45,8 @@ class BasketController {
 
     async getBasketProducts(req, res) {
         try {
-            const { userId } = req.params;
-            
+            const userId = req.user.id;
+
             const basket = await Basket.findOne({ 
                 where: { userId },
                 include: [BasketItem]
@@ -64,7 +66,8 @@ class BasketController {
 
     async removeProductFromBasket(req, res) {
         try {
-            const { userId, productId } = req.query;
+            const { productId } = req.query;
+            const userId = req.user.id;
 
             if (!userId || !productId) {
                 return res.status(400).json({ message: 'User ID and Product ID are required' });
@@ -90,7 +93,8 @@ class BasketController {
 
     async updateProductQuantityInBasket(req, res) {
         try {
-            const { userId, productId, quantity } = req.body;
+            const { productId, quantity } = req.body;
+            const userId = req.user.id;
 
             const basket = await Basket.findOne({ where: { userId } });
             if (!basket) {

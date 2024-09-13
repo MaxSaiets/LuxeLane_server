@@ -1,6 +1,8 @@
 const { Type, TypeSubCategory, Product, SubCategory, Category } = require('../models/models')
 const ApiError = require('../error/ApiError')
 
+const { updateCatalog } = require('../utils/catalogService/catalogService')
+
 class TypeController {
     async getAll(req, res, next) {
         try {
@@ -32,6 +34,8 @@ class TypeController {
                 await type.addSubCategories(subCategoryRecords);
             }
             
+            await updateCatalog();
+
             return res.json({type})
         } catch (e) {
             next(ApiError.badRequest(e.message))
@@ -43,6 +47,8 @@ class TypeController {
             const {id} = req.params
             const type = await Type.destroy({where: {id}})
             await TypeSubCategory.destroy({where: {typeId: id}})
+
+            await updateCatalog();
 
             return res.json({type})
         } catch (e) {
@@ -73,6 +79,8 @@ class TypeController {
                 await type.setSubCategories(subCategoryRecords); // Оновлення підкатегорій
             }
 
+            await updateCatalog();
+            
             return res.json({type})
         } catch (e) {
             return next(ApiError.badRequest(e.message))

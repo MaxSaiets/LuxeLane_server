@@ -1,11 +1,13 @@
 const Router = require('express')
 const router = new Router() 
 
+const checkAuthMiddleware = require('../middleware/checkAuthMiddleware')
+
 const FavoriteController = require('../controllers/favoriteController')
 
-router.post('/addFavoriteItem', FavoriteController.addFavoriteProduct);
-router.get('/fetchUserFavorites/:userId', FavoriteController.getFavoriteProducts);
-router.delete('/deleteFavoriteItem', FavoriteController.removeFavoriteProduct);
-router.delete('/removeFavoriteList', FavoriteController.removeFavoriteList);
+router.post('/addFavoriteItem', checkAuthMiddleware, FavoriteController.addFavoriteProduct);
+router.get('/fetchUserFavorites', checkAuthMiddleware, FavoriteController.getFavoriteProducts);
+router.delete('/deleteFavoriteItem', checkAuthMiddleware, FavoriteController.removeFavoriteProduct);
+router.delete('/removeFavoriteList', checkAuthMiddleware, FavoriteController.removeFavoriteList);
 
 module.exports = router
