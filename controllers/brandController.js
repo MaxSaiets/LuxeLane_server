@@ -14,7 +14,7 @@ class BrandController {
 
     async create(req, res, next) {
         try {
-            const {name} = req.body
+            const { name } = req.body
 
             const brand = await Brand.create({name})
             return res.json({brand})
@@ -25,7 +25,7 @@ class BrandController {
 
     async delete(req, res, next) {
         try {
-            const {id} = req.params
+            const { id } = req.params
 
             const brand = await Brand.destroy({where: {id}})
             return res.json({brand})

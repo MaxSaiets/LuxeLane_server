@@ -1,11 +1,11 @@
 const { SubCategory, Category, Image, SubCategoryImage } = require('../models/models')
 const ApiError = require('../error/ApiError')
+const { updateCatalog } = require('../utils/catalogService/catalogService')
 
 class SubCategoriesController {
     
     async deleteImgSubCategory(req, res) {
         try {
-
             const { id } = req.params;
 
             const image = await Image.findByPk(id);
@@ -18,6 +18,8 @@ class SubCategoriesController {
                 }
 
                 await image.destroy();
+
+                await updateCatalog();
     
                 return res.json({ message: 'Icon and associated category deleted successfully' });
             } else {
@@ -99,6 +101,8 @@ class SubCategoriesController {
     
             await SubCategoryImage.create({ subCategoryId: subCategory.id, imageId: imageId });
     
+            await updateCatalog();
+
             return res.json({ message: 'Category uploaded successfully', subCategory });
         } catch (error) {
             console.error("ERROR WITH ADD SUBCATEGORY", error);
@@ -125,6 +129,8 @@ class SubCategoriesController {
                 }
                 await subCategory.destroy();
     
+                await updateCatalog();
+
                 return res.json({ message: 'SubCategory and associated icons deleted successfully' });
             } else {
                 return res.status(404).json({ message: 'Icon not found' });
@@ -173,6 +179,8 @@ class SubCategoriesController {
                     console.error(`Image with id ${existingImageId} not found`);
                 }
             }
+            
+            await updateCatalog();
             
             return res.json(subCategory);
         } catch (error) {

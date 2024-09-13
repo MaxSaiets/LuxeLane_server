@@ -5,7 +5,9 @@ const { getDetailedProductsInfoWithBasketAndFavorites } = require('./commonFunct
 class RecentlyViewedController {
     async addRecentlyViewedProduct(req, res) {
         try {
-            let { userId, productId } = req.body;
+            let { productId } = req.body;
+
+            const userId = req.user.id;
 
             const [recentlyViewedList] = await RecentlyViewedList.findOrCreate({
                 where: { userId: userId }
@@ -31,7 +33,7 @@ class RecentlyViewedController {
 
     async getRecentlyViewedProducts(req, res) {
         try {
-            const { userId } = req.params;
+            const userId = req.user.id;
 
             const recentlyViewedList = await RecentlyViewedList.findOne({
                 where: { userId },
@@ -53,7 +55,8 @@ class RecentlyViewedController {
 
     async removeRecentlyViewedProduct(req, res) {
         try {
-            let { userId, productId, recentlyViewedListId } = req.body;
+            let { productId, recentlyViewedListId } = req.body;
+            const userId = req.user.id;
 
             const recentlyViewedList = await RecentlyViewedList.findOne({
                 where: {
@@ -88,8 +91,8 @@ class RecentlyViewedController {
 
     async removeRecentlyViewedList(req, res) {
         try {
-            let { userId, productId, recentlyViewedListId } = req.body;
-
+            let { productId, recentlyViewedListId } = req.body;
+            const userId = req.user.id;
             const recentlyViewedList = await RecentlyViewedList.findOne({
                 where: {
                     id: recentlyViewedListId,

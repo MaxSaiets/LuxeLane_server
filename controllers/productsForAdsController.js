@@ -6,7 +6,8 @@ const { getDetailedProductsInfoWithBasketAndFavorites, getDetailedProductInfo, g
 class ProductsForAdsController {
     async getRandomProductsForAds(req, res) {
         try {
-            const { itemsCount, userId } = req.query;
+            const { itemsCount } = req.query;
+            const userId = req.user?.id;
             let detailedProducts = [];  
 
             const randomProducts = await Product.findAll({

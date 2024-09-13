@@ -5,7 +5,9 @@ const { getDetailedProductInfoForBasketAndFavorites } = require('./commonFunctio
 class FavoriteController {
     async addFavoriteProduct(req, res) {
         try {
-            const { userId, productId } = req.body;
+            const { productId } = req.body;
+            const userId = req.user.id;
+
             let favoriteItem;
             const [favoriteList, created] = await FavoriteList.findOrCreate({ where: { userId } });
 
@@ -39,7 +41,7 @@ class FavoriteController {
 
     async getFavoriteProducts(req, res) {
         try { 
-            const { userId } = req.params;
+            const userId = req.user.id;
 
             const favoriteList = await FavoriteList.findOne({
                 where: { userId },
@@ -63,7 +65,8 @@ class FavoriteController {
 
     async removeFavoriteProduct(req, res) {
         try {
-            const { userId, productId } = req.query;
+            const { productId } = req.query;
+            const userId = req.user.id;
 
             if (!userId || !productId) {
                 return res.status(400).json({ message: 'User ID and Product ID are required' });
@@ -100,7 +103,7 @@ class FavoriteController {
 
     async removeFavoriteList(req, res) {
         try {
-            const { userId } = req.query;
+            const userId = req.user.id;
 
             if (!userId) {
                 return res.status(400).json({ message: 'User ID is required' });

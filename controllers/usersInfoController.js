@@ -35,7 +35,6 @@ class UsersInfoController {
         }
     }
     async updateUser(req, res) {
-
         try {
             const { id } = req.params;
             const { email, password, role, firstName, lastName, birthDate, phoneNumber } = req.body;
