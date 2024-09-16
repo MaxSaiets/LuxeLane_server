@@ -1,30 +1,43 @@
 const { RecentlyViewedList, RecentlyViewedItem } = require('../models/models');
 
-const { getDetailedProductsInfoWithBasketAndFavorites } = require('./commonFunctions/commonControllerFunctions');
+const { getDetailedProductInfoForBasketAndFavorites } = require('./commonFunctions/commonControllerFunctions');
 
 class RecentlyViewedController {
     async addRecentlyViewedProduct(req, res) {
         try {
             let { productId } = req.body;
+            const userId = req.user?.id;
 
-            const userId = req.user.id;
+            if( productId && userId ) {
+                const [recentlyViewedList] = await RecentlyViewedList.findOrCreate({
+                    where: { userId: userId }
+                });
+                
+                const existingProduct = await RecentlyViewedItem.findOne({
+                    where: {
+                        productId: productId,
+                        recentlyViewedListId: recentlyViewedList.id
+                    }
+                });
+                
+                if (existingProduct) {
+                    return res.status(200).json({ message: 'Product already in recently viewed list.' });
+                }
+                
+                const recentlyViewedProduct = await RecentlyViewedItem.create({
+                    productId: productId,
+                    recentlyViewedListId: recentlyViewedList.id
+                });
 
-            const [recentlyViewedList] = await RecentlyViewedList.findOrCreate({
-                where: { userId: userId }
-            });
+                const [detailedItem] = await getDetailedProductInfoForBasketAndFavorites({
+                    productsItems: [recentlyViewedProduct],
+                    userId: userId,
+                    imgsCount: 1
+                });         
 
-            const recentlyViewedProduct = await RecentlyViewedItem.create({
-                productId: productId,
-                recentlyViewedListId: recentlyViewedList.id
-            });
+                return res.json(detailedItem);
+            }
 
-            const [detailedItem] = await getDetailedProductsInfoWithBasketAndFavorites({
-                productsItems: [recentlyViewedProduct],
-                userId: userId,
-                imgsCount: 1
-            });         
-
-            return res.json(detailedItem);
         } catch (err) {
             console.error(err);
             return res.status(500).send('Error adding product to recently viewed: ' + err.message);
@@ -33,20 +46,21 @@ class RecentlyViewedController {
 
     async getRecentlyViewedProducts(req, res) {
         try {
-            const userId = req.user.id;
-
+            const userId = req.user?.id;
+            
             const recentlyViewedList = await RecentlyViewedList.findOne({
                 where: { userId },
                 include: [RecentlyViewedItem]
             });
-
+            
             if (!recentlyViewedList) {
                 return res.json({ recentlyViewedList: [] });
             }
-
-            const detailedItems = await getDetailedProductsInfoWithBasketAndFavorites({productsItems: recentlyViewedList.recently_viewed_items, userId: userId, imgsCount: 1});
-
+            
+            const detailedItems = await getDetailedProductInfoForBasketAndFavorites({productsItems: recentlyViewedList.recently_viewed_items, userId: userId, imgsCount: 1});
+                
             return res.json({recentlyViewedList: detailedItems});
+            
         } catch (err) {
             console.error(err);
             return res.status(500).send('Error fetching recently viewed products: ' + err.message);
@@ -56,7 +70,7 @@ class RecentlyViewedController {
     async removeRecentlyViewedProduct(req, res) {
         try {
             let { productId, recentlyViewedListId } = req.body;
-            const userId = req.user.id;
+            const userId = req.user?.id;
 
             const recentlyViewedList = await RecentlyViewedList.findOne({
                 where: {
@@ -92,7 +106,7 @@ class RecentlyViewedController {
     async removeRecentlyViewedList(req, res) {
         try {
             let { productId, recentlyViewedListId } = req.body;
-            const userId = req.user.id;
+            const userId = req.user?.id;
             const recentlyViewedList = await RecentlyViewedList.findOne({
                 where: {
                     id: recentlyViewedListId,

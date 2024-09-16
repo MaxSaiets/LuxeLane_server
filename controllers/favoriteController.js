@@ -6,7 +6,7 @@ class FavoriteController {
     async addFavoriteProduct(req, res) {
         try {
             const { productId } = req.body;
-            const userId = req.user.id;
+            const userId = req.user?.id;
 
             let favoriteItem;
             const [favoriteList, created] = await FavoriteList.findOrCreate({ where: { userId } });

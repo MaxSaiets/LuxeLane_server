@@ -42,7 +42,7 @@ class ProductController {
 
     async getProductDataById(req, res) {
         const { id } = req.params;
-        const userId = req.user.id;
+        const userId = req.user?.id;
 
         try {
             const product = await Product.findOne({
@@ -245,7 +245,7 @@ class ProductController {
 
     async fetchProductsData(req, res) {
         const { name, page = 1, brandsRequest, filters = {} } = req.body;
-        const userId = req.user.id;
+        const userId = req.user?.id;
         const limit = 10;
         const offset = (page - 1) * limit;
     

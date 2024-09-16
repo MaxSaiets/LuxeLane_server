@@ -91,7 +91,8 @@ async function getDetailedProductsInfoWithBasketAndFavorites({productsItems, use
         }
 
         return productsItems.map(item => {
-            const product = products.find(prod => prod.id === item.id);
+            const product = products.find(product => product.id === item.id);
+
             const isFavorite = favoriteProductIds.includes(product.id);
             const isInBasket = basketProductIds.includes(product.id);
 
