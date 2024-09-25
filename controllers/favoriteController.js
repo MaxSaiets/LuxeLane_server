@@ -41,11 +41,19 @@ class FavoriteController {
 
     async getFavoriteProducts(req, res) {
         try { 
-            const userId = req.user.id;
+            const { productDataCount, fetchAllProducts } = req.query;
+            const userId = req.user?.id;
+
+            if(!userId){
+                return res.json({ favorite_items: [] });
+            }
 
             const favoriteList = await FavoriteList.findOne({
                 where: { userId },
-                include: [FavoriteItem]
+                include: [{
+                    model: FavoriteItem,
+                    limit: fetchAllProducts === true ? undefined : productDataCount
+                }]
             });
 
             if(!favoriteList) {
@@ -66,7 +74,7 @@ class FavoriteController {
     async removeFavoriteProduct(req, res) {
         try {
             const { productId } = req.query;
-            const userId = req.user.id;
+            const userId = req.user?.id;
 
             if (!userId || !productId) {
                 return res.status(400).json({ message: 'User ID and Product ID are required' });
@@ -103,8 +111,8 @@ class FavoriteController {
 
     async removeFavoriteList(req, res) {
         try {
-            const userId = req.user.id;
-
+            const userId = req.user?.id;
+    
             if (!userId) {
                 return res.status(400).json({ message: 'User ID is required' });
             }

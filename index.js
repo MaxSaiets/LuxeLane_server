@@ -9,19 +9,7 @@ const path = require('path')
 
 const { generateCatalog } = require('./utils/catalogService/catalogService');
 
-const fs = require('fs');
-
-// Firebase
-const admin = require('firebase-admin');
-
-// FOR DEPLOY
-const serviceAccountPath = path.resolve(__dirname, 'serviceAccountKey.json');
-const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'));
-// const serviceAccount = require('./keys/serviceAccountKey.json');
-
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount)
-});
+const { createProductsFromJSON } = require('./controllers/commonFunctions/createProductsFromJSON');
 
 //port
 const port = process.env.PORT || 9000
@@ -47,7 +35,8 @@ const start = async () => {
         await sequelize.authenticate() //підключення до БД
         await sequelize.sync() //провіряє стан БД із схемою даних
 
-        // await sequelize.sync({ force: true }) // force true - видаляє всі дані з БД і створює нові таблиці
+        await sequelize.sync({ force: true }) // force true - видаляє всі дані з БД і створює нові таблиці
+        await createProductsFromJSON(); // Generation of products from JSON file
 
          // Generation of a cached catalog 
         await generateCatalog();

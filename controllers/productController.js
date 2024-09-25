@@ -1,5 +1,6 @@
 const {
     Product,
+    Category,
     SubCategory,
     Type,
     Brand, 
@@ -12,8 +13,6 @@ const {
     FavoriteItem,
     RecentlyViewed,
 } = require('../models/models')
-const ApiError = require('../error/ApiError')
-const { uploadProduct } = require('../multerConfig')
 const { Op } = require('sequelize');
 const sequelize = require('../db');
 
@@ -126,7 +125,6 @@ class ProductController {
             return res.status(500).json({ error: error.message });
         }
     }
-    
 
     async create(req, res) {
         try { 
@@ -329,6 +327,98 @@ class ProductController {
                 brands: productBrands,
                 pageCount
             });
+        } catch (error) {
+            console.log("Error fetching products: ", error);
+            return res.status(500).json({ error: error.message });
+        }
+    }
+
+    async getFilteredProducts(req, res) {
+        const { category, subcategory, type, brand, productsCount, minPrice, maxPrice } = req.query;
+        const userId = req.user?.id;
+        try {
+            const filters = {};
+    
+            const minPriceNumber = minPrice ? parseFloat(minPrice) : undefined;
+            const maxPriceNumber = maxPrice ? parseFloat(maxPrice) : undefined;
+
+            if (minPrice || maxPrice) {
+                filters.price = {};
+                if (minPrice) {
+                    filters.price[Op.gte] = minPriceNumber;
+                }
+                if (maxPrice) {
+                    filters.price[Op.lte] = maxPriceNumber;
+                }
+            }
+
+            const products = await Product.findAll({
+                where: filters,
+                include: [
+                    {
+                        model: Category, 
+                        attributes: ['name'],
+                        where: category ? { name: category } : undefined
+                    },
+                    { 
+                        model: SubCategory, 
+                        attributes: ['name'],
+                        where: subcategory ? { name: subcategory } : undefined // фільтруємо по підкатегорії
+                    },
+                    { 
+                        model: Type, 
+                        attributes: ['name'],
+                        where: type ? { name: type } : undefined // фільтруємо по типу
+                    },
+                    { 
+                        model: Brand, 
+                        attributes: ['name'],
+                        where: brand ? { name: brand } : undefined // фільтруємо по бренду
+                    },
+                    { 
+                        model: Image, 
+                        attributes: ['imgName', 'imgSrc']
+                    }
+                ],
+                order: sequelize.random(),
+                limit: productsCount ? parseInt(productsCount) : undefined, // перевірка на productsCount
+            });
+
+            let favoriteProductIds = [];
+            let basketProductIds = [];
+        
+            if (userId) {
+                const favoriteList = await FavoriteList.findOne({ where: { userId } });
+                if (favoriteList) {
+                    const favoriteItems = await FavoriteItem.findAll({ where: { favoriteListId: favoriteList.id } });
+                    favoriteProductIds = favoriteItems.map(item => item.productId);
+                }
+
+                const basket = await Basket.findOne({ where: { userId } });
+                if (basket) {
+                    const basketItems = await BasketItem.findAll({ where: { basketId: basket.id } });
+                    basketProductIds = basketItems.map(item => item.productId);
+                }
+            }
+        
+            const productsWithFlags = products.map(product => {
+                const isFavorite = favoriteProductIds.includes(product.id) || false;
+                const isInBasket = basketProductIds.includes(product.id) || false;
+                const images = product.images.slice(0, 4).filter((_, index) => index === 0 || index === 3).map(image => image.dataValues.imgSrc);
+
+                return {
+                    id: product.id,
+                    code: product.code,
+                    title: product.title,
+                    price: product.price,
+                    images: images,
+                    isFavorite,
+                    isInBasket,
+                };
+            });
+
+            return res.json({ products: productsWithFlags });
+            
         } catch (error) {
             console.log("Error fetching products: ", error);
             return res.status(500).json({ error: error.message });

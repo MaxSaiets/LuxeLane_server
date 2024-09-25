@@ -12,6 +12,8 @@ router.post('/addNewProduct', checkVerifyAdminMiddleware, productController.crea
 router.delete('/deleteProduct/:id', checkVerifyAdminMiddleware, productController.delete);
 router.put('/updateProduct/:id', checkVerifyAdminMiddleware, productController.update);
 
-router.post('/fetchProductsData', checkVerifyAdminMiddleware, productController.fetchProductsData);
+router.post('/fetchProductsData', checkAuthMiddleware, productController.fetchProductsData);
+
+router.get('/getFilteredProducts', checkAuthMiddleware, productController.getFilteredProducts);
 
 module.exports = router

@@ -46,18 +46,30 @@ class RecentlyViewedController {
 
     async getRecentlyViewedProducts(req, res) {
         try {
+            const { productDataCount, fetchAllProducts } = req.query;
             const userId = req.user?.id;
+
+            if(!userId){
+                return res.json([]);
+            }
             
             const recentlyViewedList = await RecentlyViewedList.findOne({
                 where: { userId },
-                include: [RecentlyViewedItem]
+                include: [{
+                    model: RecentlyViewedItem,
+                    limit: fetchAllProducts === true ? undefined : productDataCount
+                }]
             });
-            
-            if (!recentlyViewedList) {
+
+            if (!recentlyViewedList || recentlyViewedList.recently_viewed_items.length === 0) {
                 return res.json({ recentlyViewedList: [] });
             }
             
-            const detailedItems = await getDetailedProductInfoForBasketAndFavorites({productsItems: recentlyViewedList.recently_viewed_items, userId: userId, imgsCount: 1});
+            const detailedItems = await getDetailedProductInfoForBasketAndFavorites({
+                productsItems: recentlyViewedList.recently_viewed_items,
+                userId: userId,
+                imgsCount: 1
+            });
                 
             return res.json({recentlyViewedList: detailedItems});
             

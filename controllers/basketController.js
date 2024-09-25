@@ -6,7 +6,7 @@ class BasketController {
     async addProductToBasket(req, res) {
         try {
             const { productId, quantity = 1 } = req.body;
-            const userId = req.user.id;
+            const userId = req.user?.id;
 
             let basketItem;
 
@@ -45,7 +45,11 @@ class BasketController {
 
     async getBasketProducts(req, res) {
         try {
-            const userId = req.user.id;
+            const userId = req.user?.id;
+            
+            if(!userId){
+                return res.json({ basket_items: [] });
+            }
 
             const basket = await Basket.findOne({ 
                 where: { userId },
@@ -67,7 +71,7 @@ class BasketController {
     async removeProductFromBasket(req, res) {
         try {
             const { productId } = req.query;
-            const userId = req.user.id;
+            const userId = req.user?.id;
 
             if (!userId || !productId) {
                 return res.status(400).json({ message: 'User ID and Product ID are required' });
@@ -94,7 +98,7 @@ class BasketController {
     async updateProductQuantityInBasket(req, res) {
         try {
             const { productId, quantity } = req.body;
-            const userId = req.user.id;
+            const userId = req.user?.id;
 
             const basket = await Basket.findOne({ where: { userId } });
             if (!basket) {
