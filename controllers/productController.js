@@ -514,8 +514,8 @@ async function fetchMinMaxPrice() {
     try {
         const result = await Product.findAll({
             attributes: [
-                [sequelize.fn('min', sequelize.col('price')), 'minPrice'],
-                [sequelize.fn('max', sequelize.col('price')), 'maxPrice'],
+                [sequelize.fn('MIN', sequelize.col('price')), 'minPrice'],
+                [sequelize.fn('MAX', sequelize.col('price')), 'maxPrice'],
                 'subCategories.id',
                 'subCategories.name'
             ],
