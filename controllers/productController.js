@@ -510,33 +510,29 @@ async function countProducts(model, items, sequelizeFilters) {
     });
 }
 
-async function fetchMinMaxPrice(Model, items) {
+async function fetchMinMaxPrice() {
     try {
         const result = await Product.findAll({
-            include: [{
-                model: Model,
-                where: { id: items.map(item => item.id) },
-                through: { attributes: [] },
-            }],
             attributes: [
                 [sequelize.fn('min', sequelize.col('price')), 'minPrice'],
                 [sequelize.fn('max', sequelize.col('price')), 'maxPrice'],
-                `${Model.tableName}.id`
+                'subCategories.id',
+                'subCategories.name'
             ],
-            group: [`${Model.tableName}.id`],
-            raw: true,
+            include: [{
+                model: SubCategory,
+                attributes: ['id', 'name']
+            }],
+            group: ['subCategories.id', 'subCategories.name']
         });
-
-        if (result && result.length > 0) {
-            return result[0];
-        } else {
-            console.error('Error fetch min and max price: result is undefined or empty');
-            return { minPrice: 0, maxPrice: 0 };
-        }
+        
+        return result;
     } catch (error) {
-        console.error("Error fetch min and max price: ", error);
+        console.error('Error fetching min and max price:', error);
+        throw error;
     }
 }
+
 
 async function fetchBrandsWithProductCount(sequelizeFilters, selectedProducts) {
     try {
