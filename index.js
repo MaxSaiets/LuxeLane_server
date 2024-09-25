@@ -35,8 +35,8 @@ const start = async () => {
         await sequelize.authenticate() //підключення до БД
         await sequelize.sync() //провіряє стан БД із схемою даних
 
-        await sequelize.sync({ force: true }) // force true - видаляє всі дані з БД і створює нові таблиці
-        await createProductsFromJSON(); // Generation of products from JSON file
+        // await sequelize.sync({ force: true }) // force true - видаляє всі дані з БД і створює нові таблиці
+        // await createProductsFromJSON(); // Generation of products from JSON file
 
          // Generation of a cached catalog 
         await generateCatalog();

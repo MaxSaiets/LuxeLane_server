@@ -11,8 +11,26 @@ const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'));
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
   storageBucket: 'gs://reactmarket-79722.appspot.com',
+  retryOptions: {
+    autoRetry: true,
+    retryDelayMultiplier: 2,
+    totalTimeout: 600,
+    maxRetryDelay: 64,
+    maxRetries: 10,
+  },
 });
 
 const bucket = admin.storage().bucket();
 
-module.exports = { admin, bucket };
+async function uploadFile(filePath, destination) {
+  try {
+    await bucket.upload(filePath, {
+      destination: destination,
+    });
+    console.log(`${filePath} uploaded to ${destination}`);
+  } catch (error) {
+    console.error('Error uploading file:', error);
+  }
+}
+
+module.exports = { admin, bucket, uploadFile };
