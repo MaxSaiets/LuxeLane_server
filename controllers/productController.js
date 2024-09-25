@@ -510,29 +510,35 @@ async function countProducts(model, items, sequelizeFilters) {
     });
 }
 
-async function fetchMinMaxPrice() {
+async function fetchMinMaxPrice(Model, items) {
     try {
         const result = await Product.findAll({
-            attributes: [
-                [sequelize.fn('MIN', sequelize.col('price')), 'minPrice'],
-                [sequelize.fn('MAX', sequelize.col('price')), 'maxPrice'],
-                'subCategories.id',
-                'subCategories.name'
-            ],
             include: [{
-                model: SubCategory,
-                attributes: ['id', 'name']
+                model: Model,
+                where: { id: items.map(item => item.id) },
+                through: { attributes: [] },
+                attributes: [],  // Важливо не включати атрибути з включеного моделі для уникнення помилок
             }],
-            group: ['subCategories.id', 'subCategories.name']
+            attributes: [
+                [sequelize.fn('min', sequelize.col('price')), 'minPrice'],
+                [sequelize.fn('max', sequelize.col('price')), 'maxPrice'],
+                `${Model.tableName}.id`
+            ],
+            group: [`${Model.tableName}.id`],  // Групування за id моделі
+            raw: true,
         });
-        
-        return result;
+
+        if (result && result.length > 0) {
+            return result[0];
+        } else {
+            console.error('Error fetching min and max price: result is undefined or empty');
+            return { minPrice: 0, maxPrice: 0 };
+        }
     } catch (error) {
-        console.error('Error fetching min and max price:', error);
-        throw error;
+        console.error("Error fetching min and max price: ", error);
+        throw error; // Викидайте помилку для коректної обробки
     }
 }
-
 
 async function fetchBrandsWithProductCount(sequelizeFilters, selectedProducts) {
     try {
