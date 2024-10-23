@@ -173,7 +173,7 @@ async function createProductImages(product) {
 }
 
 async function getRandomImage() {
-    const imageDirectory = "C:/Users/Макс/OneDrive/Рабочий стол/Picture";
+    const imageDirectory = "C:/Users/Макс/OneDrive/Рабочий стол/PictureForWork";
 
     try {
         const files = await fs.readdir(imageDirectory);
